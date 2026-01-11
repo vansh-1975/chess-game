@@ -1,46 +1,18 @@
-const socket = io({
-    transports: ["websocket", "polling"],
-    timeout: 20000
-});
-
-socket.on("connect", () => {
-    console.log("✅ Socket connected:", socket.id);
-    const statusEl = document.getElementById("status");
-    if (statusEl) statusEl.textContent = "Connected. Waiting for opponent...";
-});
-
-socket.on("connect_error", (err) => {
-    console.error("❌ Socket connection error:", err.message);
-    const statusEl = document.getElementById("status");
-    if (statusEl) statusEl.textContent = "Connection failed";
-});
-
-socket.on("disconnect", (reason) => {
-    console.warn("⚠️ Socket disconnected:", reason);
-});
-
-
-
+const socket = io();
 const chess = new Chess();
 const boardEl = document.querySelector(".chessboard");
 const statusEl = document.getElementById("status");
 const restartBtn = document.getElementById("restart");
+const countEl = document.getElementById("counts");
+const toast = document.getElementById("toast");
 
-let playerRole = null;   // "w" | "b" | "spectator"
+let playerRole = null;
+let selected = null;
 let dragged = null;
 let source = null;
-let selected = null;
 
-socket.on("connect", () => {
-    if (statusEl) statusEl.textContent = "Connected. Waiting for opponent...";
-});
+const isTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
-const isTouch =
-    "ontouchstart" in window || navigator.maxTouchPoints > 0;
-
-/* ===========================
-   BOARD RENDERING
-=========================== */
 function renderBoard() {
     boardEl.innerHTML = "";
     const board = chess.board();
@@ -49,78 +21,71 @@ function renderBoard() {
         row.forEach((piece, c) => {
             const sq = document.createElement("div");
             sq.className = `square ${(r + c) % 2 ? "dark" : "light"}`;
-            sq.dataset.row = r;
-            sq.dataset.col = c;
 
             if (piece) {
                 const p = document.createElement("div");
                 p.className = `piece ${piece.color === "w" ? "white" : "black"}`;
                 p.textContent = getUnicode(piece);
 
-                // 🖱️ DRAG SUPPORT (DESKTOP)
                 if (!isTouch && piece.color === playerRole) {
                     p.draggable = true;
-
-                    p.addEventListener("dragstart", () => {
+                    p.ondragstart = () => {
                         dragged = p;
                         source = { r, c };
-                    });
-
-                    p.addEventListener("dragend", () => {
+                    };
+                    p.ondragend = () => {
                         dragged = null;
                         source = null;
-                    });
+                    };
                 }
 
                 sq.appendChild(p);
             }
 
-            // 📱 TAP SUPPORT (MOBILE)
             if (isTouch) {
-                sq.addEventListener("click", () =>
-                    tapMove(piece, r, c, sq)
-                );
+                sq.addEventListener("click", () => onTap(piece, r, c, sq));
             }
 
-            // DROP TARGET
-            sq.addEventListener("dragover", e => e.preventDefault());
-            sq.addEventListener("drop", () => {
-                if (dragged && source) {
+            sq.ondragover = e => e.preventDefault();
+            sq.ondrop = () => {
+                if (dragged && source && playerRole) {
                     move(source, { r, c });
                 }
-            });
+            };
 
             boardEl.appendChild(sq);
         });
     });
 
-    // 🔄 FLIP BOARD FOR BLACK
     boardEl.classList.toggle("flipped", playerRole === "b");
 }
 
-/* ===========================
-   TOUCH MOVE HANDLING
-=========================== */
-function tapMove(piece, r, c, sq) {
-    if (!selected && piece && piece.color === playerRole) {
-        selected = { r, c };
-        sq.classList.add("drag-over");
-    } else if (selected) {
-        move(selected, { r, c });
-        selected = null;
-        clearHighlights();
+function onTap(piece, r, c, sq) {
+    if (!playerRole) return;
+
+    document.querySelectorAll(".square.tap")
+  .forEach(s => s.classList.remove("tap"));
+sq.classList.add("tap");
+
+    if (!selected) {
+        if (piece && piece.color === playerRole) {
+            selected = { r, c };
+            sq.classList.add("drag-over");
+        }
+        return;
     }
+
+    move(selected, { r, c });
+    clearSelection();
 }
 
-function clearHighlights() {
+function clearSelection() {
+    selected = null;
     document
-        .querySelectorAll(".square.drag-over")
-        .forEach(sq => sq.classList.remove("drag-over"));
+        .querySelectorAll(".drag-over")
+        .forEach(el => el.classList.remove("drag-over"));
 }
 
-/* ===========================
-   SEND MOVE TO SERVER
-=========================== */
 function move(from, to) {
     socket.emit("move", {
         from: `${String.fromCharCode(97 + from.c)}${8 - from.r}`,
@@ -129,9 +94,6 @@ function move(from, to) {
     });
 }
 
-/* ===========================
-   PIECE UNICODE
-=========================== */
 function getUnicode(p) {
     const u = {
         p:"♟", r:"♜", n:"♞", b:"♝", q:"♛", k:"♚",
@@ -140,73 +102,45 @@ function getUnicode(p) {
     return u[p.color === "w" ? p.type.toUpperCase() : p.type];
 }
 
-/* ===========================
-   SOCKET EVENTS (NEW + OLD)
-=========================== */
+function showToast(message, duration = 2000) {
+    toast.textContent = message;
+    toast.classList.remove("hidden");
 
-// ROLE ASSIGNMENT
-socket.on("role", r => {
-    playerRole = r === "spectator" ? null : r;
-    renderBoard();
-});
+    setTimeout(() => {
+        toast.classList.add("hidden");
+    }, duration);
+}
 
-// BACKWARD COMPAT (old server)
 socket.on("playerRole", r => {
     playerRole = r;
     renderBoard();
 });
+
 socket.on("spectatorRole", () => {
     playerRole = null;
     renderBoard();
 });
 
-// BOARD SYNC
-socket.on("board", fen => {
-    chess.load(fen);
-    renderBoard();
-});
 socket.on("boardState", fen => {
     chess.load(fen);
     renderBoard();
 });
 
-// STATUS MESSAGE (WAITING / GAME STATE)
 socket.on("status", msg => {
-    if (statusEl) statusEl.textContent = msg;
+    statusEl.textContent = msg;
 });
 
-// INVALID MOVE
 socket.on("invalidMove", () => {
-    showToast("Illegal move! Please try again.");
-    dragged = null;
-    source = null;
+    showToast("Illegal move! Try again");
     selected = null;
-    clearHighlights();
-    renderBoard();
-});
-socket.on("invalid", () => {
-    showToast("Illegal move! Please try again.");
+    clearSelection();
 });
 
-/* ===========================
-   RESTART GAME
-=========================== */
-if (restartBtn) {
-    restartBtn.addEventListener("click", () => {
-        socket.emit("restart");
-    });
-}
+restartBtn.onclick = () => {
+    if (playerRole) socket.emit("restart");
+};
 
-function showToast(message) {
-    const toast = document.createElement("div");
-    toast.className = "toast";
-    toast.textContent = message;
-    document.body.appendChild(toast);
-
-    setTimeout(() => toast.classList.add("show"), 10);
-
-    setTimeout(() => {
-        toast.classList.remove("show");
-        setTimeout(() => toast.remove(), 300);
-    }, 2000);
-}
+socket.on("counts", data => {
+    countEl.innerText =
+        `Players: ${data.players} | Spectators: ${data.spectators}`;
+});

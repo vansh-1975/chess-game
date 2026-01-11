@@ -6,16 +6,7 @@ const { Chess } = require("chess.js");
 
 const app = express();
 const server = http.createServer(app);
-
-
-const io = new Server(server, {
-    cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
-    },
-    transports: ["websocket", "polling"]
-});
-
+const io = new Server(server);
 
 let chess = new Chess();
 let players = { white: null, black: null };
@@ -25,24 +16,19 @@ app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/", (req, res) => res.render("index"));
 
-function assignRole(socket) {
-    if (!players.white) {
-        players.white = socket.id;
-        socket.emit("role", "w");
-    } else if (!players.black) {
-        players.black = socket.id;
-        socket.emit("role", "b");
-    } else {
-        socket.emit("role", "spectator");
-    }
-    socket.emit("status",
-        !players.white || !players.black
-            ? "Waiting for another player to join..."
-            : "Game in progress"
-    );
+function broadcastCounts() {
+    const totalClients = io.engine.clientsCount;
+    const activePlayers =
+        (players.white ? 1 : 0) + (players.black ? 1 : 0);
+    const spectators = totalClients - activePlayers;
+
+    io.emit("counts", {
+        players: activePlayers,
+        spectators: spectators
+    });
 }
 
-function broadcastStatus() {
+function sendStatus() {
     if (!players.white || !players.black) {
         io.emit("status", "Waiting for another player to join...");
     } else {
@@ -51,58 +37,59 @@ function broadcastStatus() {
 }
 
 io.on("connection", socket => {
-    console.log("🔥 Client connected:", socket.id);
-    assignRole(socket);
-    socket.emit("board", chess.fen());
-    broadcastStatus();
+    if (!players.white) {
+        players.white = socket.id;
+        socket.emit("playerRole", "w");
+    } else if (!players.black) {
+        players.black = socket.id;
+        socket.emit("playerRole", "b");
+    } else {
+        socket.emit("spectatorRole");
+    }
+
+    socket.emit("boardState", chess.fen());
+    sendStatus();
+    broadcastCounts();
 
     socket.on("move", move => {
-        const isWhite = socket.id === players.white;
-        const isBlack = socket.id === players.black;
-
         if (
-            (chess.turn() === "w" && !isWhite) ||
-            (chess.turn() === "b" && !isBlack)
-        ) return;
-
-        try {
-            const result = chess.move(move);
-            if (result) {
-                io.emit("board", chess.fen());
-                if (chess.isGameOver()) {
-                    io.emit("status", "Game Over");
-                }
-            }
-        } catch {
-            socket.emit("invalid");
+            (chess.turn() === "w" && socket.id !== players.white) ||
+            (chess.turn() === "b" && socket.id !== players.black)
+        ) {
+            socket.emit("invalidMove");
+            return;
         }
+
+        let result;
+        try {
+            result = chess.move(move);
+        } catch (e) {
+            socket.emit("invalidMove");
+            return;
+        }
+
+        if (!result) {
+            socket.emit("invalidMove");
+            return;
+        }
+
+        io.emit("boardState", chess.fen());
     });
 
     socket.on("restart", () => {
         if (socket.id === players.white || socket.id === players.black) {
             chess = new Chess();
-            io.emit("board", chess.fen());
-            io.emit("status", "Game restarted");
+            io.emit("boardState", chess.fen());
+            sendStatus();
+            broadcastCounts();
         }
     });
 
     socket.on("disconnect", () => {
         if (socket.id === players.white) players.white = null;
         if (socket.id === players.black) players.black = null;
-
-        // Reassign roles
-        const sockets = Array.from(io.sockets.sockets.keys());
-        players.white = sockets[0] || null;
-        players.black = sockets[1] || null;
-
-        if (players.white) io.to(players.white).emit("role", "w");
-        if (players.black) io.to(players.black).emit("role", "b");
-
-        sockets.slice(2).forEach(id =>
-            io.to(id).emit("role", "spectator")
-        );
-
-        broadcastStatus();
+        sendStatus();
+        broadcastCounts();
     });
 });
 
