@@ -86,7 +86,7 @@ socket.on("playerRole", r => { playerRole = r; renderBoard(); });
 socket.on("spectatorRole", () => { playerRole = null; renderBoard(); });
 socket.on("boardState", fen => { chess.load(fen); renderBoard(); });
 
-socket.on("invalid-move", move => {
+socket.on("invalidMove", move => {
     showToast("Illegal move! Please try again.");
     dragged = null;
     source = null;

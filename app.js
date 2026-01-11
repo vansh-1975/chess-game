@@ -1,12 +1,12 @@
 const express = require("express");
 const path = require("path");
 const http = require("http");
-const socket = require("socket.io");
+const { Server } = require("socket.io");
 const { Chess } = require("chess.js");
 
 const app = express();
 const server = http.createServer(app);
-const io = socket(server);
+const io = new Server(server);
 
 const chess = new Chess();
 const players = {};
@@ -37,17 +37,14 @@ io.on("connection", (sock) => {
             (chess.turn() === "b" && sock.id !== players.black)
         ) return;
 
-        let result = null;
         try {
-            result = chess.move(move);
-        } catch (err) {
-            sock.emit("invalidMove", move);
-            return;
-        }
-
-        if (result) {
-            io.emit("boardState", chess.fen());
-        } else {
+            const result = chess.move(move);
+            if (result) {
+                io.emit("boardState", chess.fen());
+            } else {
+                sock.emit("invalidMove", move);
+            }
+        } catch {
             sock.emit("invalidMove", move);
         }
     });
@@ -58,4 +55,5 @@ io.on("connection", (sock) => {
     });
 });
 
-server.listen(3000, () => console.log("Server running on 3000"));
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`Server running on ${PORT}`));
