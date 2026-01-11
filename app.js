@@ -74,6 +74,26 @@ io.on("connection", socket => {
         }
 
         io.emit("boardState", chess.fen());
+
+// GAME OVER LOGIC
+if (chess.in_checkmate()) {
+    const winner = chess.turn() === "w" ? "Black" : "White";
+    io.emit("gameOver", {
+        type: "checkmate",
+        winner
+    });
+}
+else if (chess.in_stalemate()) {
+    io.emit("gameOver", {
+        type: "stalemate"
+    });
+}
+else if (chess.in_draw()) {
+    io.emit("gameOver", {
+        type: "draw"
+    });
+}
+
     });
 
     socket.on("restart", () => {

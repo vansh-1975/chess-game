@@ -111,6 +111,21 @@ function showToast(message, duration = 2000) {
     }, duration);
 }
 
+function move(from, to) {
+    if (gameEnded) return;
+    socket.emit("move", {
+        from: `${String.fromCharCode(97 + from.c)}${8 - from.r}`,
+        to: `${String.fromCharCode(97 + to.c)}${8 - to.r}`,
+        promotion: "q"
+    });
+}
+
+socket.on("boardState", fen => {
+    chess.load(fen);
+    gameEnded = false;
+    renderBoard();
+});
+
 socket.on("playerRole", r => {
     playerRole = r;
     renderBoard();
@@ -143,4 +158,25 @@ restartBtn.onclick = () => {
 socket.on("counts", data => {
     countEl.innerText =
         `Players: ${data.players} | Spectators: ${data.spectators}`;
+});
+
+socket.on("gameOver", data => {
+    if (data.type === "checkmate") {
+        showToast(`Checkmate! ${data.winner} wins 👑`, 4000);
+        statusEl.textContent = `Checkmate — ${data.winner} wins`;
+    }
+
+    if (data.type === "stalemate") {
+        showToast("Stalemate! It's a draw 🤝", 4000);
+        statusEl.textContent = "Stalemate — Draw";
+    }
+
+    if (data.type === "draw") {
+        showToast("Draw!", 4000);
+        statusEl.textContent = "Draw";
+    }
+});
+let gameEnded = false;
+socket.on("gameOver", () => {
+    gameEnded = true;
 });
