@@ -6,7 +6,16 @@ const { Chess } = require("chess.js");
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+
+
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    },
+    transports: ["websocket", "polling"]
+});
+
 
 let chess = new Chess();
 let players = { white: null, black: null };
@@ -42,6 +51,7 @@ function broadcastStatus() {
 }
 
 io.on("connection", socket => {
+    console.log("🔥 Client connected:", socket.id);
     assignRole(socket);
     socket.emit("board", chess.fen());
     broadcastStatus();

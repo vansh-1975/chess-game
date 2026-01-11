@@ -1,4 +1,26 @@
-const socket = io();
+const socket = io({
+    transports: ["websocket", "polling"],
+    timeout: 20000
+});
+
+socket.on("connect", () => {
+    console.log("✅ Socket connected:", socket.id);
+    const statusEl = document.getElementById("status");
+    if (statusEl) statusEl.textContent = "Connected. Waiting for opponent...";
+});
+
+socket.on("connect_error", (err) => {
+    console.error("❌ Socket connection error:", err.message);
+    const statusEl = document.getElementById("status");
+    if (statusEl) statusEl.textContent = "Connection failed";
+});
+
+socket.on("disconnect", (reason) => {
+    console.warn("⚠️ Socket disconnected:", reason);
+});
+
+
+
 const chess = new Chess();
 const boardEl = document.querySelector(".chessboard");
 const statusEl = document.getElementById("status");
