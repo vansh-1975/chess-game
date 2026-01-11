@@ -3,18 +3,30 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 <title>Chess</title>
 
 <style>
-body{
-    margin:0;
-    background:#0f172a;
-    color:white;
-    font-family:system-ui;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:10px;
+body {
+    margin: 0;
+    background: radial-gradient(circle at top, #312e81, #020617);
+    color: white;
+    font-family: system-ui;
+}
+
+.game-wrapper {
+    min-height: calc(100vh - 120px); /* leaves space for footer */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.board-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .chessboard{
@@ -48,6 +60,7 @@ button{
     border:none;
     border-radius:8px;
     cursor:pointer;
+    background-color: green;
 }
 .square.tap {
   outline: 3px solid #22c55e;
@@ -78,13 +91,54 @@ button{
 </head>
 
 <body>
-<h3 id="status">Connecting...</h3>
-<div id="toast" class="toast hidden"></div>
-<p id="counts">Players: 0 | Spectators: 0</p>
-<button id="restart">Restart Game</button>
-<div class="chessboard"></div>
-<div id="toast" class="toast hidden"></div>
+  <div class="game-wrapper">
+    <h3 id="status">Connecting...</h3>
+    <p id="counts">Players: 0 | Spectators: 0</p>
+    
 
+    <div class="board-wrapper">
+      <div class="chessboard"></div>
+    </div>
+    <button id="restart">Restart Game</button>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+<footer class="text-white body-font">
+  <div class="container px-5 py-8 mx-auto flex items-center sm:flex-row flex-col">
+    <a class="flex title-font font-medium items-center md:justify-start justify-center text-white">
+      <img src="https://cdn-icons-png.flaticon.com/512/616/616408.png" alt="Logo" class="w-10 h-10 object-cover rounded-full">
+      <span class="ml-3 text-xl">Chess</span>
+    </a>
+    <p class="text-sm text-white sm:ml-4 sm:pl-4 sm:border-l-2 sm:border-gray-200 sm:py-2 sm:mt-0 mt-4">© 2026 Chess —
+      <a href="https://instagram.com/vansh___1975" class="text-white ml-1" rel="noopener noreferrer" target="_blank">@vanshbisht</a>
+    </p>
+    <span class="inline-flex sm:ml-auto sm:mt-0 mt-4 justify-center sm:justify-start">
+      <a class="text-gray-500">
+        <svg fill="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="w-5 h-5" viewBox="0 0 24 24">
+          <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"></path>
+        </svg>
+      </a>
+      <a class="ml-3 text-white">
+        <svg fill="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="w-5 h-5" viewBox="0 0 24 24">
+          <path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"></path>
+        </svg>
+      </a>
+      <a class="ml-3 text-gray-500">
+        <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="w-5 h-5" viewBox="0 0 24 24">
+          <rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect>
+          <path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37zm1.5-4.87h.01"></path>
+        </svg>
+      </a>
+      <a class="ml-3 text-white">
+        <svg fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="0" class="w-5 h-5" viewBox="0 0 24 24">
+          <path stroke="none" d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"></path>
+          <circle cx="4" cy="4" r="2" stroke="none"></circle>
+        </svg>
+      </a>
+    </span>
+  </div>
+</footer>
 
 <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
