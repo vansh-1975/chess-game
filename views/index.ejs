@@ -1,97 +1,55 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Chess</title>
+<meta charset="UTF-8">
+<title>Chess</title>
 
-    <style>
-        body {
-            margin: 0;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: #1e293b;
-            font-family: system-ui, sans-serif;
-        }
-
-        .chessboard {
-            display: grid;
-            grid-template-columns: repeat(8, 1fr);
-            grid-template-rows: repeat(8, 1fr);
-            width: 400px;
-            aspect-ratio: 1;
-            max-width: 90vw;
-            border-radius: 14px;
-            overflow: hidden;
-            box-shadow: 0 20px 45px rgba(0,0,0,.6);
-        }
-
-        .square {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .square.light { background: #f0d9b5; }
-        .square.dark  { background: #b58863; }
-
-        .square.drag-over {
-            outline: 3px solid #22c55e;
-            outline-offset: -3px;
-        }
-
-        .piece {
-            font-size: clamp(28px, 6vw, 38px);
-            cursor: pointer;
-            font-family: "Segoe UI Symbol", "DejaVu Sans", serif;
-        }
-
-        .piece.white {
-            color: white;
-            text-shadow: 0 2px 4px rgba(0,0,0,.8);
-        }
-
-        .piece.black {
-            color: #0f172a;
-            text-shadow: 0 2px 4px rgba(255,255,255,.4);
-        }
-
-        .flipped { transform: rotate(180deg); }
-        .flipped .piece { transform: rotate(180deg); }
-        .toast {
-    visibility: hidden;
-    min-width: 180px;
-    background-color: #333;
-    color: #fff;
-    text-align: center;
-    border-radius: 5px;
-    padding: 10px;
-    position: fixed;
-    z-index: 999;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 14px;
-    opacity: 0;
-    transition: opacity 0.3s ease, bottom 0.3s ease;
+<style>
+body {
+    background:#0f172a;
+    color:white;
+    font-family:system-ui;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:12px;
 }
 
-.toast.show {
-    visibility: visible;
-    opacity: 1;
-    bottom: 50px;
+.chessboard {
+    display:grid;
+    grid-template:repeat(8,1fr)/repeat(8,1fr);
+    width:400px;
+    aspect-ratio:1;
+    border-radius:12px;
+    overflow:hidden;
 }
 
-    </style>
+.square {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:32px;
+}
+.light { background:#f0d9b5; }
+.dark { background:#b58863; }
+
+button {
+    padding:8px 14px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+}
+</style>
 </head>
 
 <body>
-    <div class="chessboard"></div>
 
-    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
-    <script src="/javascript/chessgame.js"></script>
+<h2 id="status">Connecting...</h2>
+<button id="restart">Restart Game</button>
+<div class="chessboard"></div>
+
+<script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+<script src="/chessgame.js"></script>
 </body>
 </html>
