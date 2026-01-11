@@ -9,6 +9,10 @@ let dragged = null;
 let source = null;
 let selected = null;
 
+socket.on("connect", () => {
+    if (statusEl) statusEl.textContent = "Connected. Waiting for opponent...";
+});
+
 const isTouch =
     "ontouchstart" in window || navigator.maxTouchPoints > 0;
 

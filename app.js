@@ -26,6 +26,11 @@ function assignRole(socket) {
     } else {
         socket.emit("role", "spectator");
     }
+    socket.emit("status",
+        !players.white || !players.black
+            ? "Waiting for another player to join..."
+            : "Game in progress"
+    );
 }
 
 function broadcastStatus() {
